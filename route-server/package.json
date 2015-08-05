@@ -1,0 +1,15 @@
+{
+  "name": "route-server",
+  "description": "Simple route server",
+  "main": "server.js",
+  "repository": {
+  	"type": "git",
+  	"url": "git@github.com:zafartahirov/MEAN_Machine.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^4.13.3"
+  }
+}

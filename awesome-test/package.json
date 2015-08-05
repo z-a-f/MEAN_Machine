@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/zafartahirov/MEAN_Machine/issues"
   },
-  "homepage": "https://github.com/zafartahirov/MEAN_Machine"
+  "homepage": "https://github.com/zafartahirov/MEAN_Machine",
+  "dependencies": {
+    "express": "^4.13.3"
+  }
 }
