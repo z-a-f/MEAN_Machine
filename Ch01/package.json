@@ -1,0 +1,19 @@
+{
+  "name": "mean-machine-code",
+  "version": "1.0.0",
+  "description": "The code repository for the book, MEAN Machine.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:zafartahirov/MEAN_Machine.git"
+  },
+  "author": "Zafar Takhirov",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zafartahirov/MEAN_Machine/issues"
+  },
+  "homepage": "https://github.com/zafartahirov/MEAN_Machine"
+}
