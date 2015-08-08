@@ -2,9 +2,9 @@
 // ======================================
 
 // CALL THE PACKAGES --------------------
-var express = require('express'); // call express
-var app = express(); // define our app using express
 var bodyParser = require('body-parser'); // get body-parser
+var express = require('express'); // call express
+var jwt = require ('jsonwebtoken');
 var morgan = require('morgan'); // used to see requests
 var mongoose = require('mongoose'); // for working w/ our database
 var port = process.env.PORT || 8080; // set the port for our app
@@ -12,6 +12,9 @@ var port = process.env.PORT || 8080; // set the port for our app
 var User = require('./app/models/user');
 
 // APP CONFIGURATION ---------------------
+var app = express(); // define our app using express
+var superSecret = 'ilovescotchscotchyscotchscotch';
+
 // use body parser so we can grab information from POST requests
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -42,13 +45,79 @@ app.get('/', function(req, res) {
 // get an instance of the express router
 var apiRouter = express.Router();
 
+// route for authenticating users:
+apiRouter.post('/authenticate', function(req, res) {
+	// find the user, select the name and username explicitly
+	User.findOne({username: req.body.username})
+	.select('name username password').exec(function(err, user) {
+		if (err) throw err;
+		// no user found?:
+		if (!user) {
+			res.json({
+				success: false,
+				message: 'Authentication failed. User not found!'
+			});
+		} else {
+			// check if password matches:
+			var validPassword = user.comparePassword(req.body.password);
+			if (!validPassword) {
+				res.json({
+					success: false,
+					message: 'Authentication failed. Wrong password!'
+				});
+			} else { // User found and password correct
+				// create a token
+				var token = jwt.sign({
+					name: user.name,
+					username: user.username
+				}, superSecret, {
+					expiresInMinutes: 1440 // 24 hours
+				});
+				// return the information
+				res.json({
+					success: true,
+					message: 'Enjoy your token!',
+					token: token
+				})
+			}
+		}
+	});
+});
+
 // middleware to use on all requests:
 apiRouter.use(function(req, res, next) {
 	console.log('Someone just came to our app!');
 
 	// More will be added here
 
-	next();
+	// check header or url parameters or post parameters for token
+	var token = req.body.token ||
+				req.param('token') || 
+				req.headers['x-access-token'];
+	// decode token:
+	if (token) {
+		// verify secret and check exp
+		jwt.verify(token, superSecret, function(err, decoded) {
+			if (err) {
+				return res.status(403).send({
+					success: false,
+					message: 'Failed to authenticate token.'
+				});
+			} else {
+				// everything is good - save to request for use in other resources
+				req.decoded = decoded;
+
+				next();
+			}
+		})
+	} else {
+		// if there is no token, return an HTTP 403 (forbidden)
+		return res.status(403).send({
+			success: false,
+			message: 'No token provided.'
+		});
+	}
+	// next();
 });
 
 // test route to make sure everything is working
@@ -127,6 +196,11 @@ apiRouter.route('/users/:user_id')
 				res.json({ message: 'User deleted!'});
 			});
 	});
+
+// endpoint api to get user information
+apiRouter.get('/me', function(req, res) {
+	res.send(req.decoded);
+});
 
 // REGISTER OUR ROUTES -------------------------------
 // all of our routes will be prefixed with /api
