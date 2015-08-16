@@ -1,3 +1,4 @@
+```
 .
 |-- app/
 |   |-- models/
@@ -20,5 +21,5 @@
 |-- config.js
 |-- package.json
 `-- server.js
+```
 
-14 directories, 7 files
