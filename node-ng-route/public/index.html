@@ -32,24 +32,24 @@
         <!-- HEADER and NAVBAR -->
         <header>
             <nav class = "navbar navbar-default">
-                <div class="navbar-header"
+                <div class="navbar-header">
                     <a class="navbar-brand" href="/">Angular Routing Example</a>
                 </div>
 
                 <ul class="nav navbar-nav navbar-right">
                     <li><a href="/"><i class="fa fa-home"></i> Home</a></li>
                     <li><a href="/about"><i class="fa fa-shield"></i> About</a></li>
-                    <li><a href="/contacts"><i class="fa fa-comment"></i> Contact</a></li>
+                    <li><a href="/contact"><i class="fa fa-comment"></i> Contact</a></li>
                 </ul>
             </nav>
         </header>
 
         <!-- MAIN CONTENT and INJECTED VIEWS -->
         <main>
-            <div class="jumbotron">
+            <div class="jumbotron text-center">
                 <h1>{{ main.bigMessage }}</h1>
             </div>
-            
+
             <!-- angular templating will go here -->
             <!-- this is where content will be injected -->
             <div ng-view></div>

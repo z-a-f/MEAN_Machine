@@ -1,5 +1,5 @@
 angular.module('routerApp', ['routerRoutes'])
-  
+
 // create the controllers
 // this will be the controller for the ENTIRE site
     .controller('mainController', function() {
@@ -9,7 +9,7 @@ angular.module('routerApp', ['routerRoutes'])
     })
 
 // home page controller
-    .controller('HomeController', function() {
+    .controller('homeController', function() {
         var vm = this;
         vm.message = 'This is home page!';
     })
