@@ -30,3 +30,4 @@ db.users.remove({});
 
 //remove one
 db.users.remove({name: 'Holly'});
+
