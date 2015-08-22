@@ -1,146 +1,176 @@
-// var express = require('express');
-var User = require('../models/user');
-var jwt = require ('jsonwebtoken');
-var config = require('../../config');
+var User       = require('../models/user');
+var jwt        = require('jsonwebtoken');
+var config     = require('../../config');
 
-// setup the super secret:
+// super secret for creating tokens
 var superSecret = config.secret;
 
-module.exports = functions(app, express) {
-    // get an instance of the express router
+module.exports = function(app, express) {
+
     var apiRouter = express.Router();
 
-    // route for authenticating users:
+    // route to authenticate a user (POST http://localhost:8080/api/authenticate)
     apiRouter.post('/authenticate', function(req, res) {
-        // find the user, select the name and username explicitly
-        User.findOne({username: req.body.username})
-            .select('name username password').exec(function(err, user) {
-                if (err) throw err;
-                // no user found?:
-                if (!user) {
+        console.log(req.body.username);
+
+        // find the user
+        User.findOne({
+            username: req.body.username
+        }).select('name username password').exec(function(err, user) {
+
+            if (err) throw err;
+
+            // no user with that username was found
+            if (!user) {
+                res.json({
+                    success: false,
+                    message: 'Authentication failed. User not found.'
+                });
+            } else if (user) {
+
+                // check if password matches
+                var validPassword = user.comparePassword(req.body.password);
+                if (!validPassword) {
                     res.json({
                         success: false,
-                        message: 'Authentication failed. User not found!'
+                        message: 'Authentication failed. Wrong password.'
                     });
                 } else {
-                    // check if password matches:
-                    var validPassword = user.comparePassword(req.body.password);
-                    if (!validPassword) {
-                        res.json({
-                            success: false,
-                            message: 'Authentication failed. Wrong password!'
-                        });
-                    } else { // User found and password correct
-                        // create a token
-                        var token = jwt.sign({
-                            name: user.name,
-                            username: user.username
-                        }, superSecret, {
-                            expiresInMinutes: 1440 // 24 hours
-                        });
-                        // return the information
-                        res.json({
-                            success: true,
-                            message: 'Enjoy your token!',
-                            token: token
-                        });
-                    }
-                }
-            });
-    });
 
-    // middleware to use on all requests:
-    apiRouter.use(function(req, res, next) {
-        console.log('Someone just came to our app!');
-
-        // More will be added here
-
-        // check header or url parameters or post parameters for token
-        var token = req.body.token ||
-                req.param('token') ||
-                req.headers['x-access-token'];
-        // decode token:
-        if (token) {
-            // verify secret and check exp
-            jwt.verify(token, superSecret, function(err, decoded) {
-                if (err) {
-                    return res.status(403).send({
-                        success: false,
-                        message: 'Failed to authenticate token.'
+                    // if user is found and password is right
+                    // create a token
+                    var token = jwt.sign({
+                        name: user.name,
+                        username: user.username
+                    }, superSecret, {
+                        expiresInMinutes: 1440 // expires in 24 hours
                     });
-                } else {
-                    // everything is good - save to request for use in other resources
-                    req.decoded = decoded;
 
-                    next();
+                    // return the information including token as JSON
+                    res.json({
+                        success: true,
+                        message: 'Enjoy your token!',
+                        token: token
+                    });
                 }
-            })
-        } else {
-            // if there is no token, return an HTTP 403 (forbidden)
-            return res.status(403).send({
-                success: false,
-                message: 'No token provided.'
-            });
-        }
-        // next();
+
+            }
+
+        });
     });
+
+    // ======================
+    // NOTE: I am placing the API call and POST before token check
+    // ======================
 
     // test route to make sure everything is working
     // accessed at GET http://localhost:8080/api
     apiRouter.get('/', function(req, res) {
-        res.json({ message: 'hooray! welcome to our API!' });
+        console.log(req.body);
+        res.json({ message: 'hooray! welcome to our api!' });
     });
 
-    // more routes for our API will happen here
-
-    // on routes that end in /users/
-    // ------------------------------
+    // on routes that end in /users
+    // ----------------------------------------------------
     apiRouter.route('/users')
-    // create a user:
+
+    // create a user (accessed at POST http://localhost:8080/users)
         .post(function(req, res) {
-            // create a new 'user':
-            var user = new User();
+            console.log(req.body);
+            var user = new User();          // create a new instance of the User model
+            user.name = req.body.name;  // set the users name (comes from the request)
+            user.username = req.body.username;  // set the users username (comes from the request)
+            user.password = req.body.password;  // set the users password (comes from the request)
 
-            // set the user information (from request):
-            user.name = req.body.name;
-            user.username = req.body.username;
-            user.password = req.body.password;
-
-            // save the user and check for errors:
-            user.save(function(err) {
+            user.save(function(err, resp) {
                 if (err) {
+
+                    console.log(err);
                     // duplicate entry
                     if (err.code == 11000)
-                        return res.json({success: false, message: 'User exists'});
+                        return res.json({ success: false, message: 'A user with that username already exists. '});
                     else
                         return res.send(err);
                 }
-                res.json({message: 'User created!' });
+
+                // return a message
+                res.json({ message: 'User created!' });
             });
-        })
-    // get all users:
+        });
+
+    // ==================================
+    // route middleware to verify a token
+    apiRouter.use(function(req, res, next) {
+        // do logging
+        console.log('Somebody just came to our app!');
+
+        // check header or url parameters or post parameters for token
+        var token = req.body.token || req.query.token || req.headers['x-access-token'];
+        console.log("Header token is: " + req.headers['x-access-token']);
+        console.log("The token is: " + token);
+        // decode token
+        if (token) {
+
+            // verifies secret and checks exp
+            jwt.verify(token, superSecret, function(err, decoded) {
+                if (err)
+                    return res.json({ success: false, message: 'Failed to authenticate token.' });
+                else
+                    // if everything is good, save to request for use in other routes
+                    req.decoded = decoded;
+            });
+
+        } else {
+
+            // if there is no token
+            // return an HTTP response of 403 (access forbidden) and an error message
+            return res.status(403).send({
+                success: false,
+                message: 'No token provided.'
+            });
+
+        }
+
+        next(); // make sure we go to the next routes and don't stop here
+    });
+
+
+    // ======================
+    // NOTE: I am placing the API call and POST before token check
+    // ======================
+    apiRouter.route('/users')
+    // get all the users (accessed at GET http://localhost:8080/api/users)
         .get(function(req, res) {
             User.find(function(err, users) {
                 if (err) res.send(err);
 
+                // return the users
                 res.json(users);
             });
         });
 
+    // on routes that end in /users/:user_id
+    // ----------------------------------------------------
     apiRouter.route('/users/:user_id')
+
     // get the user with that id
         .get(function(req, res) {
             User.findById(req.params.user_id, function(err, user) {
+            // User.find({username: req.params.user_id}, function(err, user) {
                 if (err) res.send(err);
+
+                // return that user
                 res.json(user);
             });
         })
-    // Update user
-        .put (function(req, res) {
+
+    // update the user with this id
+        .put(function(req, res) {
             User.findById(req.params.user_id, function(err, user) {
+
                 if (err) res.send(err);
 
-                // Update new info
+                // set the new user information if it exists in the request
                 if (req.body.name) user.name = req.body.name;
                 if (req.body.username) user.username = req.body.username;
                 if (req.body.password) user.password = req.body.password;
@@ -149,17 +179,22 @@ module.exports = functions(app, express) {
                 user.save(function(err) {
                     if (err) res.send(err);
 
-                    res.json({message: 'User updated!'});
+                    // return a message
+                    res.json({ message: 'User updated!' });
                 });
+
             });
         })
-    // delete user
+
+    // delete the user with this id
         .delete(function(req, res) {
-            User.remove({_id: req.params.user_id},
-                        function(err, user) {
-                            if (err) return res.send(err);
-                            res.json({ message: 'User deleted!'});
-                        });
+            User.remove({
+                _id: req.params.user_id
+            }, function(err, user) {
+                if (err) res.send(err);
+
+                res.json({ message: 'Successfully deleted' });
+            });
         });
 
     return apiRouter;

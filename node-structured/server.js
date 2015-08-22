@@ -27,8 +27,7 @@ app.use(bodyParser.json());
 app.use(function(req, res, next) {
 	res.setHeader('Access-Control-Allow-Origin', '*');
 	res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
-	res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type, \
-		Authorization');
+	res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With, content-type, Authorization');
 	next();
 });
 
@@ -50,6 +49,7 @@ app.use('/api', apiRoutes);
 // MAIN CATCHALL
 // basic route for the home page
 app.get('*', function(req, res) {
+    console.log(req.body);
     res.sendFile(path.join(__dirname + '/public/app/views/index.html'));
 });
 
