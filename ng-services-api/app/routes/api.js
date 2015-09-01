@@ -11,8 +11,9 @@ module.exports = function(app, express) {
 
     // route to authenticate a user (POST http://localhost:8080/api/authenticate)
     apiRouter.post('/authenticate', function(req, res) {
+        console.log('AUTH requested')
         console.log(req.body.username);
-
+        
         // find the user
         User.findOne({
             username: req.body.username
@@ -92,7 +93,7 @@ module.exports = function(app, express) {
                     else
                         return res.send(err);
                 }
-                
+
                 // return a message
                 res.json({ message: 'User created!' });
             });
@@ -143,7 +144,7 @@ module.exports = function(app, express) {
         .get(function(req, res) {
             User.find(function(err, users) {
                 if (err) res.send(err);
-                
+
                 // return the users
                 res.json(users);
             });
@@ -156,7 +157,7 @@ module.exports = function(app, express) {
     // get the user with that id
         .get(function(req, res) {
             User.findById(req.params.user_id, function(err, user) {
-            // User.find({username: req.params.user_id}, function(err, user) {
+                // User.find({username: req.params.user_id}, function(err, user) {
                 if (err) res.send(err);
 
                 // return that user
